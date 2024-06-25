@@ -1,58 +1,81 @@
-import { useEffect, useState } from "react";
+import React from "react";
+import { useState } from "react";
 
-type Post = {
-  id: number;
+type Todo = {
+  id: string;
   title: string;
-  content: string;
+  description: string;
+  isDone: boolean;
 };
 
-type Pagination<T> = {
-  data: T[];
-  first: number;
-  items: number;
-  last: number;
-  next: number | null;
-  pages: number;
-  prev: number | null;
-};
-
-async function getPost(page: number): Promise<Pagination<Post>> {
-  const res = await fetch(
-    `http://localhost:4000/posts?_page=${page}&_per_page=10`
-  );
-  const data = await res.json();
-
-  return data;
-}
-
+type TodoList = Todo[];
 function App() {
-  const [posts, setPosts] = useState<Pagination<Post> | undefined>();
-  const [page, setPage] = useState(1);
+  const [todos, setTodos] = useState<TodoList>([]);
 
-  useEffect(() => {
-    getPost(page).then((data) => setPosts(data));
-  }, [page]);
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
 
-  const next = () => {
-    setPage(page + 1);
+  const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
   };
-  const prev = () => {
-    setPage(page - 1);
+
+  const onDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDescription(e.target.value);
+  };
+
+  const onCreateClicked = () => {
+    setTodos([
+      ...todos,
+      {
+        id: crypto.randomUUID(),
+        title,
+        description,
+        isDone: false,
+      },
+    ]);
+  };
+
+  const onDeleteClicked = (id: Todo["id"]) => {
+    setTodos(todos.filter((todo) => todo.id !== id));
+  };
+
+  const onToggleClicked = (id: Todo["id"]) => {
+    setTodos(
+      todos.map((todo) => {
+        if (todo.id === id) {
+          return {
+            ...todo,
+            isDone: !todo.isDone,
+          };
+        }
+        return todo;
+      })
+    );
   };
 
   return (
     <>
-      <h1>Posts</h1>
+      <h1>Todo List</h1>
       <ul>
-        {posts?.data.map((post) => (
-          <li key={post.id}>
-            <h2>{post.title}</h2>
-            <p>{post.content}</p>
-          </li>
+        {todos.map((todo) => (
+          <React.Fragment key={todo.id}>
+            <li
+              style={{
+                textDecoration: todo.isDone ? "line-through" : "none",
+              }}
+              onClick={() => onToggleClicked(todo.id)}
+            >
+              <h3>{todo.title}</h3>
+              <p>{todo.description}</p>
+            </li>
+            <button onClick={() => onDeleteClicked(todo.id)}>삭제</button>
+          </React.Fragment>
         ))}
       </ul>
-      <button onClick={prev}>{"<"}</button>
-      <button onClick={next}>{">"}</button>
+
+      <input type="text" onChange={onTitleChange} />
+      <input type="text" onChange={onDescriptionChange} />
+      <button onClick={onCreateClicked}>등록</button>
     </>
   );
 }
